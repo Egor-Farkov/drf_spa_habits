@@ -15,13 +15,22 @@ class Habits(models.Model):
         (MONTHLY, "Ежемесячно"),
     ]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь", related_name="habits")
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name="Пользователь",
+        related_name="habits",
+    )
     place = models.CharField(max_length=255, verbose_name="Место")
     time_success = models.PositiveIntegerField(
-        verbose_name="Время выполнения (сек)", default=120, help_text="Время на выполнение привычки в секундах"
+        verbose_name="Время выполнения (сек)",
+        default=120,
+        help_text="Время на выполнение привычки в секундах",
     )
     action = models.CharField(max_length=500, verbose_name="Действие")
-    is_pleasant = models.BooleanField(verbose_name="Признак приятной привычки", default=False)
+    is_pleasant = models.BooleanField(
+        verbose_name="Признак приятной привычки", default=False
+    )
     fk_habits = models.ForeignKey(
         "self",
         on_delete=models.SET_NULL,
@@ -36,7 +45,9 @@ class Habits(models.Model):
         choices=PERIOD_CHOICES,
         help_text="Периодичность выполнения привычки",
     )
-    reward = models.CharField(max_length=500, verbose_name="Вознаграждение", blank=True, null=True)
+    reward = models.CharField(
+        max_length=500, verbose_name="Вознаграждение", blank=True, null=True
+    )
     max_time_processing = models.PositiveIntegerField(
         verbose_name="Максимальное время выполнения (сек)",
         default=120,
