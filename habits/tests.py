@@ -158,7 +158,9 @@ class HabitTestCase(APITestCase):
         response = self.client.post(url, body, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("Время выполнения не должно превышать 120 секунд", str(response.content))
+        self.assertIn(
+            "Время выполнения не должно превышать 120 секунд", str(response.content)
+        )
 
     def test_habit_create_related_habit_error(self):
         """Тест ошибки при выборе неправильной связанной привычки"""
@@ -177,7 +179,10 @@ class HabitTestCase(APITestCase):
         response = self.client.post(url, body, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("В качестве связанной привычки можно выбрать только приятную привычку", str(response.content))
+        self.assertIn(
+            "В качестве связанной привычки можно выбрать только приятную привычку",
+            str(response.content),
+        )
 
     def test_habit_create_reward_and_related_error(self):
         """Тест ошибки при одновременном выборе вознаграждения и связанной привычки"""
@@ -196,7 +201,10 @@ class HabitTestCase(APITestCase):
         response = self.client.post(url, body, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("Нельзя одновременно выбирать и связанную привычку и вознаграждение", str(response.content))
+        self.assertIn(
+            "Нельзя одновременно выбирать и связанную привычку и вознаграждение",
+            str(response.content),
+        )
 
     def test_habit_create_pleasant_habit_with_reward_error(self):
         """Тест ошибки при создании приятной привычки с вознаграждением"""
@@ -214,7 +222,9 @@ class HabitTestCase(APITestCase):
         response = self.client.post(url, body, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("Приятная привычка не может иметь вознаграждения", str(response.content))
+        self.assertIn(
+            "Приятная привычка не может иметь вознаграждения", str(response.content)
+        )
 
     def test_habit_create_pleasant_habit_with_related_error(self):
         """Тест ошибки при создании приятной привычки со связанной привычкой"""
@@ -233,7 +243,10 @@ class HabitTestCase(APITestCase):
         response = self.client.post(url, body, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("Приятная привычка не может быть связана с другой привычкой", str(response.content))
+        self.assertIn(
+            "Приятная привычка не может быть связана с другой привычкой",
+            str(response.content),
+        )
 
     def test_habit_create_good_habit_no_reward_or_related_error(self):
         """Тест ошибки при создании полезной привычки без вознаграждения и связанной привычки"""
@@ -251,8 +264,10 @@ class HabitTestCase(APITestCase):
         response = self.client.post(url, body, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("Полезная привычка должна иметь либо вознаграждение, либо связанную привычку",
-                      str(response.content))
+        self.assertIn(
+            "Полезная привычка должна иметь либо вознаграждение, либо связанную привычку",
+            str(response.content),
+        )
 
     def test_habit_create_pleasant_habit_success(self):
         """Тест успешного создания приятной привычки"""
@@ -282,7 +297,7 @@ class HabitTestCase(APITestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['place'], "Дом")
+        self.assertEqual(response.data["place"], "Дом")
 
     def test_habit_retrieve_public_habit_other_user(self):
         """Тест получения публичной привычки другого пользователя"""
@@ -290,7 +305,7 @@ class HabitTestCase(APITestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['place'], "Офис")
+        self.assertEqual(response.data["place"], "Офис")
 
     def test_habit_retrieve_private_habit_other_user_error(self):
         """Тест ошибки при получении приватной привычки другого пользователя"""
@@ -306,7 +321,9 @@ class HabitTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Должны видеть 3 свои привычки
-        self.assertEqual(len(response.data['results']), 4)  # 4 созданные + возможно пагинация
+        self.assertEqual(
+            len(response.data["results"]), 4
+        )  # 4 созданные + возможно пагинация
 
     def test_habit_update_own_habit(self):
         """Тест обновления своей привычки"""
@@ -320,7 +337,9 @@ class HabitTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.good_habit_with_reward.refresh_from_db()
         self.assertEqual(self.good_habit_with_reward.place, "Обновленное место")
-        self.assertEqual(self.good_habit_with_reward.reward, "Обновленное вознаграждение")
+        self.assertEqual(
+            self.good_habit_with_reward.reward, "Обновленное вознаграждение"
+        )
 
     def test_habit_update_other_user_habit_error(self):
         """Тест ошибки при обновлении чужой привычки"""

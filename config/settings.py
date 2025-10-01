@@ -66,12 +66,12 @@ MIDDLEWARE = [
 ROOT_URLCONF = "config.urls"
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8000",  # Замените на адрес вашего фронтенд-сервера
+    "http://localhost:8000",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:8000",  #  Замените на адрес вашего фронтенд-сервера
-    # и добавьте адрес бэкенд-сервера
+    "http://localhost:8000",
+
 ]
 
 CORS_ALLOW_ALL_ORIGINS = False
