@@ -61,7 +61,9 @@ jobs:
           EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
           EMAIL_USE_TLS: False
           EMAIL_USE_SSL: True
-        run: poetry run python manage.py makemigrations
+        run: |
+          echo "${{ secrets.DJANGO_SECRET_KEY }}"
+          poetry run python manage.py makemigrations
       - name: Run tests
         env:
           SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
