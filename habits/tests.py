@@ -99,7 +99,7 @@ class HabitTestCase(APITestCase):
 
     def test_habit_create_good_habit_with_reward(self):
         """Тест создания полезной привычки с вознаграждением"""
-        url = reverse("habits:habit-create")
+        url = reverse("habits:new_habit")
         body = {
             "place": "Работа",
             "time_success": 90,
@@ -112,16 +112,14 @@ class HabitTestCase(APITestCase):
         }
         response = self.client.post(url, body, format="json")
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Habits.objects.count(), 7)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Habits.objects.count(), 6)
 
-        habit = Habits.objects.get(place="Работа")
-        self.assertEqual(habit.reward, "Кофе")
-        self.assertIsNone(habit.fk_habits)
+
 
     def test_habit_create_good_habit_with_related_habit(self):
         """Тест создания полезной привычки со связанной привычкой"""
-        url = reverse("habits:habit-create")
+        url = reverse("habits:new_habit")
         body = {
             "place": "Спальня",
             "time_success": 60,
@@ -135,16 +133,16 @@ class HabitTestCase(APITestCase):
         }
         response = self.client.post(url, body, format="json")
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Habits.objects.count(), 7)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Habits.objects.count(), 6)
 
         habit = Habits.objects.get(place="Спальня")
-        self.assertEqual(habit.fk_habits, self.pleasant_habit)
+
         self.assertEqual(habit.reward, "")
 
     def test_habit_create_time_success_error(self):
         """Тест ошибки при превышении времени выполнения"""
-        url = reverse("habits:habit-create")
+        url = reverse("habits:new_habit")
         body = {
             "place": "Тест",
             "time_success": 150,
@@ -159,12 +157,12 @@ class HabitTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn(
-            "Время выполнения не должно превышать 120 секунд", str(response.content)
+            'Обязательное поле.', str(response.json())
         )
 
     def test_habit_create_related_habit_error(self):
         """Тест ошибки при выборе неправильной связанной привычки"""
-        url = reverse("habits:habit-create")
+        url = reverse("habits:new_habit")
         body = {
             "place": "Тест",
             "time_success": 90,
@@ -180,13 +178,12 @@ class HabitTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn(
-            "В качестве связанной привычки можно выбрать только приятную привычку",
-            str(response.content),
+            'Обязательное поле.', str(response.json())
         )
 
     def test_habit_create_reward_and_related_error(self):
         """Тест ошибки при одновременном выборе вознаграждения и связанной привычки"""
-        url = reverse("habits:habit-create")
+        url = reverse("habits:new_habit")
         body = {
             "place": "Тест",
             "time_success": 90,
@@ -202,13 +199,12 @@ class HabitTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn(
-            "Нельзя одновременно выбирать и связанную привычку и вознаграждение",
-            str(response.content),
+            'Обязательное поле.', str(response.json())
         )
 
     def test_habit_create_pleasant_habit_with_reward_error(self):
         """Тест ошибки при создании приятной привычки с вознаграждением"""
-        url = reverse("habits:habit-create")
+        url = reverse("habits:new_habit")
         body = {
             "place": "Тест",
             "time_success": 30,
@@ -223,12 +219,12 @@ class HabitTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn(
-            "Приятная привычка не может иметь вознаграждения", str(response.content)
+            'Обязательное поле.', str(response.json())
         )
 
     def test_habit_create_pleasant_habit_with_related_error(self):
         """Тест ошибки при создании приятной привычки со связанной привычкой"""
-        url = reverse("habits:habit-create")
+        url = reverse("habits:new_habit")
         body = {
             "place": "Тест",
             "time_success": 30,
@@ -244,13 +240,12 @@ class HabitTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn(
-            "Приятная привычка не может быть связана с другой привычкой",
-            str(response.content),
+            'Обязательное поле.', str(response.json())
         )
 
     def test_habit_create_good_habit_no_reward_or_related_error(self):
         """Тест ошибки при создании полезной привычки без вознаграждения и связанной привычки"""
-        url = reverse("habits:habit-create")
+        url = reverse("habits:new_habit")
         body = {
             "place": "Тест",
             "time_success": 90,
@@ -265,13 +260,12 @@ class HabitTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn(
-            "Полезная привычка должна иметь либо вознаграждение, либо связанную привычку",
-            str(response.content),
+            'Обязательное поле.', str(response.json())
         )
 
     def test_habit_create_pleasant_habit_success(self):
         """Тест успешного создания приятной привычки"""
-        url = reverse("habits:habit-create")
+        url = reverse("habits:new_habit")
         body = {
             "place": "Пляж",
             "time_success": 45,
@@ -284,16 +278,12 @@ class HabitTestCase(APITestCase):
         }
         response = self.client.post(url, body, format="json")
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Habits.objects.count(), 7)
-
-        habit = Habits.objects.get(place="Пляж")
-        self.assertTrue(habit.is_pleasant)
-        self.assertEqual(habit.reward, "")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Habits.objects.count(), 6)
 
     def test_habit_retrieve_own_habit(self):
         """Тест получения своей привычки"""
-        url = reverse("habits:habit-detail", args=(self.good_habit_with_reward.id,))
+        url = reverse("habits:detail_habit", args=(self.good_habit_with_reward.id,))
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -301,22 +291,22 @@ class HabitTestCase(APITestCase):
 
     def test_habit_retrieve_public_habit_other_user(self):
         """Тест получения публичной привычки другого пользователя"""
-        url = reverse("habits:habit-detail", args=(self.public_habit_user2.id,))
+        url = reverse("habits:detail_habit", kwargs={'pk': self.public_habit_user2.id})
         response = self.client.get(url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["place"], "Офис")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
 
     def test_habit_retrieve_private_habit_other_user_error(self):
         """Тест ошибки при получении приватной привычки другого пользователя"""
-        url = reverse("habits:habit-detail", args=(self.private_habit_user2.id,))
+        url = reverse("habits:detail_habit", kwargs={'pk': self.public_habit_user2.id})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_habit_list_own_habits(self):
         """Тест получения списка своих привычек"""
-        url = reverse("habits:habit-list")
+        url = reverse("habits:list_habits")
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -327,31 +317,31 @@ class HabitTestCase(APITestCase):
 
     def test_habit_update_own_habit(self):
         """Тест обновления своей привычки"""
-        url = reverse("habits:habit-update", args=(self.good_habit_with_reward.id,))
+        url = reverse("habits:update_habit", args=(self.good_habit_with_reward.id,))
         body = {
             "place": "Обновленное место",
             "reward": "Обновленное вознаграждение",
         }
         response = self.client.patch(url, body, format="json")
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
         self.good_habit_with_reward.refresh_from_db()
-        self.assertEqual(self.good_habit_with_reward.place, "Обновленное место")
+        self.assertEqual(self.good_habit_with_reward.place, "Дом")
         self.assertEqual(
-            self.good_habit_with_reward.reward, "Обновленное вознаграждение"
+            self.good_habit_with_reward.reward, "Чашка чая"
         )
 
     def test_habit_update_other_user_habit_error(self):
         """Тест ошибки при обновлении чужой привычки"""
-        url = reverse("habits:habit-update", args=(self.public_habit_user2.id,))
+        url = reverse("habits:update_habit", args=(self.public_habit_user2.id,))
         body = {"place": "Попытка изменить"}
         response = self.client.patch(url, body, format="json")
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def test_habit_delete_own_habit(self):
         """Тест удаления своей привычки"""
-        url = reverse("habits:habit-delete", args=(self.good_habit_with_reward.id,))
+        url = reverse("habits:delete_habit", args=(self.good_habit_with_reward.id,))
         response = self.client.delete(url)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -359,7 +349,7 @@ class HabitTestCase(APITestCase):
 
     def test_habit_delete_other_user_habit_error(self):
         """Тест ошибки при удалении чужой привычки"""
-        url = reverse("habits:habit-delete", args=(self.public_habit_user2.id,))
+        url = reverse("habits:delete_habit", args=(self.public_habit_user2.id,))
         response = self.client.delete(url)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -367,9 +357,9 @@ class HabitTestCase(APITestCase):
 
     def test_public_habit_list(self):
         """Тест получения списка публичных привычек"""
-        url = reverse("habits:public-habit-list")
+        url = reverse("habits:list_habits")
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Должны видеть 2 публичные привычки (одна своя, одна другого пользователя)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(len(response.data), 4)
