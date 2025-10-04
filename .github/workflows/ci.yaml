@@ -179,6 +179,7 @@ jobs:
           echo "\$DEPLOY_DIR"
           cd "\$DEPLOY_DIR"
           PGPASSWORD='${{ secrets.DB_PASSWORD }}' psql -h localhost -U ${{ secrets.DB_USER }} -d ${{ secrets.DB_NAME }} -c "SELECT 1;" || exit 1
+          ~/.local/bin/poetry run python manage.py makemigrations
           ~/.local/bin/poetry run python manage.py migrate --no-input
           EOF
 
