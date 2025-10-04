@@ -91,19 +91,6 @@ jobs:
       - name: Add server to known_hosts
         run: |
           ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
-      - name: Add server to known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
-
-      - name: Debug SSH connection
-        run: |
-          echo "🔍 Debugging SSH connection..."
-          # Показываем какие ключи в агенте
-          ssh-add -l
-          # Пробуем подключиться с детальным выводом
-          ssh -vvv ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "echo 'Test successful'" || true
       - name: Copy project files to server
         run: |
           ssh -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << "EOF"
@@ -121,7 +108,7 @@ jobs:
       - name: Install dependencies on server
         run: |
           ssh -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << "EOF"
-          cd "${{ secrets.DEPLOY_DIR }}"
+          cd "${{ secrets.DEPLOY_DIR }}/${{ secrets.SSH_USER }}/"
           curl -sSL https://install.python-poetry.org | python3 -
           ~/.local/bin/poetry install --no-root
           EOF
