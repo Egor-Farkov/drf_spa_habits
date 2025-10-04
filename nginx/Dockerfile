@@ -1,7 +1,7 @@
 FROM nginx:latest
 
-COPY nginx.conf /etc/nginx/nginx.conf
+RUN mkdir -p /drf_spa_habits/static
 
-COPY html/ /usr/share/nginx/html/
+COPY nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 80

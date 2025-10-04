@@ -151,7 +151,7 @@ jobs:
       - name: Create .env file on server
         run: |
           ssh -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << "EOF"
-          DEPLOY_DIR="${{ secrets.DEPLOY_DIR }}"
+          DEPLOY_DIR="/home/${{ secrets.SSH_USER }}/drf_spa_habits"
           if [ ! -d "\$DEPLOY_DIR/.git" ]; then
             echo "Cloning repository into \$DEPLOY_DIR..."
             git clone "https://github.com/Egor-Farkov/drf_spa_habits.git" "\$DEPLOY_DIR"
@@ -171,7 +171,7 @@ jobs:
       - name: Apply migrations
         run: |
           ssh -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << "EOF"
-          DEPLOY_DIR="${{ secrets.DEPLOY_DIR }}"
+          DEPLOY_DIR="/home/${{ secrets.SSH_USER }}/drf_spa_habits"
           if [ ! -d "\$DEPLOY_DIR/.git" ]; then
             echo "Cloning repository into \$DEPLOY_DIR..."
             git clone "https://github.com/Egor-Farkov/drf_spa_habits.git" "\$DEPLOY_DIR"
@@ -197,7 +197,7 @@ jobs:
       - name: Start Django application
         run: |
           ssh -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << "EOF"
-          DEPLOY_DIR="${{ secrets.DEPLOY_DIR }}"
+          DEPLOY_DIR="/home/${{ secrets.SSH_USER }}/drf_spa_habits"
           if [ ! -d "\$DEPLOY_DIR/.git" ]; then
             echo "Cloning repository into \$DEPLOY_DIR..."
             git clone "https://github.com/Egor-Farkov/drf_spa_habits.git" "\$DEPLOY_DIR"
