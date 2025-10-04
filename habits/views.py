@@ -1,12 +1,14 @@
 from django.views.generic import UpdateView
 from django_celery_beat.models import PeriodicTask
 from rest_framework.generics import (CreateAPIView, DestroyAPIView,
-                                     ListAPIView, RetrieveAPIView, get_object_or_404)
+                                     ListAPIView, RetrieveAPIView,
+                                     get_object_or_404)
 
 from habits.models import Habits
 from habits.paginators import HabitPagination
 from habits.serializers import HabitsSerializer, PublicHabitsSerializer
-from habits.services import replaces_create, make_replacements, create_schedule, create_task
+from habits.services import (create_schedule, create_task, make_replacements,
+                             replaces_create)
 from users.permissions import IsUser
 
 
@@ -26,7 +28,6 @@ class HabitCreateApiView(CreateAPIView):
                 schedule = create_schedule(habit.frequency)
 
                 create_task(schedule, habit)
-
 
 
 class PublicHabitListApiView(ListAPIView):
@@ -64,7 +65,10 @@ class HabitUpdateApiView(UpdateView):
             habit.save()
 
             if habit.user.chat_id_telegramm:
-                task = get_object_or_404(PeriodicTask, name=f'я напоминаю о привычке {habit.pk} {habit.action}')
+                task = get_object_or_404(
+                    PeriodicTask,
+                    name=f"я напоминаю о привычке {habit.pk} {habit.action}",
+                )
                 schedule = create_schedule(habit.frequency)
                 if task:
                     task.enabled = False
