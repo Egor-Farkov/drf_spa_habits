@@ -1,0 +1,211 @@
+name: Django DRF Atomic Habits CI/CD Pipeline
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+      - name: Install Poetry
+        run: pip install poetry
+      - name: Install dependencies
+        run: poetry install --no-root
+      - name: Run Flake8
+        run: poetry run flake8 .
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: 12345
+          POSTGRES_DB: habits
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+      - name: Install Poetry
+        run: pip install poetry
+      - name: Install dependencies
+        run: poetry install --no-root
+      - name: Makemigrations
+        env:
+          SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          DB_NAME: habits
+          DB_USER: postgres
+          DB_PASSWORD: 12345
+          DB_HOST: localhost
+          DB_PORT: 5432
+          EMAIL_HOST: smtp.yandex.ru
+          EMAIL_PORT: 465
+          EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
+          EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
+          EMAIL_USE_TLS: False
+          EMAIL_USE_SSL: True
+        run: poetry run python manage.py makemigrations --noinput
+      - name: Run tests
+        env:
+          SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          DB_NAME: habits
+          DB_USER: postgres
+          DB_PASSWORD: 12345
+          DB_HOST: localhost
+          DB_PORT: 5432
+          EMAIL_HOST: smtp.yandex.ru
+          EMAIL_PORT: 465
+          EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
+          EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
+          EMAIL_USE_TLS: False
+          EMAIL_USE_SSL: True
+        run: poetry run python manage.py test
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/feature/CI_CD'
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Add server to known_hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+      - name: Copy project files to server
+        run: |
+          ssh -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << "EOF"
+          DEPLOY_DIR="${{ secrets.DEPLOY_DIR }}"
+          if [ ! -d "\$DEPLOY_DIR/.git" ]; then
+            echo "Cloning repository into \$DEPLOY_DIR..."
+            git clone "https://github.com/Egor-Farkov/drf_spa_habits.git" "\$DEPLOY_DIR"
+          fi
+          echo "\$DEPLOY_DIR"
+          cd "\$DEPLOY_DIR"
+          git fetch origin
+          git checkout "feature/CI_CD"
+          git reset --hard "origin/feature/CI_CD"
+          EOF
+
+      - name: Install dependencies on server
+        run: |
+          ssh -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << "EOF"
+          DEPLOY_DIR="${{ secrets.DEPLOY_DIR }}"
+          if [ ! -d "\$DEPLOY_DIR/.git" ]; then
+            echo "Cloning repository into \$DEPLOY_DIR..."
+            git clone "https://github.com/Egor-Farkov/drf_spa_habits.git" "\$DEPLOY_DIR"
+          fi
+          echo "\$DEPLOY_DIR"
+          cd "\$DEPLOY_DIR"
+          curl -sSL https://install.python-poetry.org | python3 -
+          ~/.local/bin/poetry install --no-root
+          EOF
+
+      - name: Setup and configure PostgreSQL
+        run: |
+          ssh -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << "EOF"
+          sudo apt update
+          
+          sudo apt install -y postgresql postgresql-contrib
+          
+          sudo systemctl start postgresql
+          sudo systemctl enable postgresql
+          
+          sudo systemctl status postgresql
+          
+          if ! systemctl is-active --quiet postgresql; then
+            echo "PostgreSQL is not running. Starting..."
+            sudo systemctl start postgresql
+          else
+            echo "PostgreSQL is already running."
+          fi
+          sudo systemctl enable postgresql
+
+          sudo -u postgres psql -c "ALTER USER ${{ secrets.DB_USER }} WITH PASSWORD '${{ secrets.DB_PASSWORD }}';"
+
+          sudo -u postgres psql -tc "SELECT 1 FROM pg_database WHERE datname='${{ secrets.DB_NAME }}';" | grep -q 1 || \
+          sudo -u postgres psql -c "CREATE DATABASE ${{ secrets.DB_NAME }} OWNER ${{ secrets.DB_USER }};"
+
+          sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ${{ secrets.DB_NAME }} TO ${{ secrets.DB_USER }};"
+          EOF
+
+      - name: Create .env file on server
+        run: |
+          ssh -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << "EOF"
+          DEPLOY_DIR="/home/${{ secrets.SSH_USER }}/drf_spa_habits"
+          if [ ! -d "\$DEPLOY_DIR/.git" ]; then
+            echo "Cloning repository into \$DEPLOY_DIR..."
+            git clone "https://github.com/Egor-Farkov/drf_spa_habits.git" "\$DEPLOY_DIR"
+          fi
+          echo "\$DEPLOY_DIR"
+          cd "\$DEPLOY_DIR"
+          cat > .env <<EOL
+          SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
+          DB_NAME=${{ secrets.DB_NAME }}
+          DB_USER=${{ secrets.DB_USER }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          DB_HOST=localhost
+          DB_PORT=5432
+          EOL
+          EOF
+
+      - name: Apply migrations
+        run: |
+          ssh -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << "EOF"
+          DEPLOY_DIR="/home/${{ secrets.SSH_USER }}/drf_spa_habits"
+          if [ ! -d "\$DEPLOY_DIR/.git" ]; then
+            echo "Cloning repository into \$DEPLOY_DIR..."
+            git clone "https://github.com/Egor-Farkov/drf_spa_habits.git" "\$DEPLOY_DIR"
+          fi
+          echo "\$DEPLOY_DIR"
+          cd "\$DEPLOY_DIR"
+          PGPASSWORD='${{ secrets.DB_PASSWORD }}' psql -h localhost -U ${{ secrets.DB_USER }} -d ${{ secrets.DB_NAME }} -c "SELECT 1;" || exit 1
+          ~/.local/bin/poetry run python manage.py makemigrations
+          ~/.local/bin/poetry run python manage.py migrate --no-input
+          EOF
+
+      - name: Install and start Docker
+        run: |
+          ssh -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << "EOF"
+          curl -fsSL https://get.docker.com -o get-docker.sh
+          sh get-docker.sh
+          # Запуск Docker демона
+          sudo systemctl start docker
+          sudo systemctl enable docker
+          docker --version
+          echo "Application Docker installed"
+          EOF
+
+      - name: Start Django application
+        run: |
+          ssh -T -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << "EOF"
+          DEPLOY_DIR="/home/${{ secrets.SSH_USER }}/drf_spa_habits"
+          if [ ! -d "\$DEPLOY_DIR/.git" ]; then
+            echo "Cloning repository into \$DEPLOY_DIR..."
+            git clone "https://github.com/Egor-Farkov/drf_spa_habits.git" "\$DEPLOY_DIR"
+          fi
+          echo "\$DEPLOY_DIR"
+          cd "\$DEPLOY_DIR"
+          docker compose down
+          docker compose up --build
+          echo "Application started in background"
+          EOF
